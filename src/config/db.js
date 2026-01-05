@@ -1,17 +1,17 @@
+import fs from "fs";
+import pg from "pg";
 
-const fs = require('fs');
-const pg = require('pg');
-const url = require('url');
+const { Client } = pg;
 
 const config = {
-    user: "avnadmin",
-    password: "AVNS_bl5g9IG5oA4urX7inYP",
-    host: "pg-7d34f48-gowthamdeveloper94-2e8a.l.aivencloud.com",
-    port: 14219,
-    database: "defaultdb",
-    ssl: {
-        rejectUnauthorized: true,
-        ca: `-----BEGIN CERTIFICATE-----
+  user: "avnadmin",
+  password: "AVNS_bl5g9IG5oA4urX7inYP",
+  host: "pg-7d34f48-gowthamdeveloper94-2e8a.l.aivencloud.com",
+  port: 14219,
+  database: "defaultdb",
+  ssl: {
+    rejectUnauthorized: true,
+    ca: `-----BEGIN CERTIFICATE-----
 MIIEUDCCArigAwIBAgIUNG4fI5FU5xomR/MwwetbZTNvTf4wDQYJKoZIhvcNAQEM
 BQAwQDE+MDwGA1UEAww1YTI2MTZlODktYjc4OC00MzA1LWI1NzQtYTFhMGZjNWRi
 ZDZjIEdFTiAxIFByb2plY3QgQ0EwHhcNMjUxMjMxMDQyNjI4WhcNMzUxMjI5MDQy
@@ -37,23 +37,24 @@ fBxIsW2M9CRYKXF8Z3ibhyPjUURANWKrYn95+h6ui1ReV9hR2qbWfO5SSngnlXvY
 x1MJOTYkRrmv7mvfQf+jVAKT7hLNsuFrPhXQ3HAana/DLrWjcffklss8znpmRjgW
 Fwu2Kw==
 -----END CERTIFICATE-----`,
-    },
+  },
 };
 
-const client = new pg.Client(config);
-client.connect(function (err) {
-    if (err)
-        throw err;
-    client.query("SELECT VERSION()", [], function (err, result) {
-        if (err)
-            throw err;
+const client = new Client(config);
 
-        console.log(result.rows[0].version);
-        client.end(function (err) {
-            if (err)
-                throw err;
-        });
-    });
-});
+async function checkPostgresVersion() {
+  try {
+    await client.connect();
+    const res = await client.query("SELECT VERSION()");
+    console.log(res.rows[0].version);
+  } catch (err) {
+    console.error("Error connecting to PostgreSQL:", err);
+  } finally {
+    await client.end();
+  }
+}
 
-module.exports = client;
+// Run the function
+checkPostgresVersion();
+
+export default client;

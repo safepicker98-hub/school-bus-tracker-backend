@@ -4,13 +4,20 @@
   "description": "The bus tracking app for parent and child.",
   "main": "server.js",
   "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
     "nodemon": "^3.1.11",
-    "pg": "^8.16.3"
+    "pg": "^8.16.3",
+    "prisma": "^5.22.0"
   }
 }

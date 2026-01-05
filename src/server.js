@@ -1,17 +1,17 @@
+require('dotenv').config();
+
 const express = require('express');
 const app = express();
-const client = require('./config/db');
+const routes = require('./routes/index');
 
+app.use(express.json());
 
-app.get('/', (req, res) => {
-    res.send('Hello World!');
+app.get('/welcome', (req, res) => {
+  res.status(200).send('OK');
 });
+app.use('/api', routes);
 
-app.post('/', (req, res) => {
-    res.send('Hello World!');
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
-
-client;
-
-app.listen(3000, () => 
-    console.log("Server is starting..."))
