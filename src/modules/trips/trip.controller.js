@@ -1,14 +1,18 @@
-const authService = require('./auth.service');
+const tripService = require('./trip.service');
 
-class AuthController {
+class TripController {
 
-  async register(req, res) {
+  async start(req, res) {
     try {
-      const user = await authService.register(req.body);
+      const trip = await tripService.startTrip(
+        req.user.id,
+        req.body
+      );
+
       return res.status(201).json({
         success: true,
-        message: 'User registered successfully',
-        user
+        message: 'Trip started',
+        trip
       });
     } catch (error) {
       return res.status(400).json({
@@ -18,43 +22,17 @@ class AuthController {
     }
   }
 
-  async login(req, res) {
+  async end(req, res) {
     try {
-      const data = await authService.login(req.body);
-      return res.status(200).json({
-        success: true,
-        message: 'Login successful',
-        ...data
-      });
-    } catch (error) {
-      return res.status(401).json({
-        success: false,
-        message: error.message
-      });
-    }
-  }
+      const trip = await tripService.endTrip(
+        req.user.id,
+        req.body.tripId
+      );
 
-  async refreshToken(req, res) {
-    try {
-      const data = await authService.refreshToken(req.body);
       return res.status(200).json({
         success: true,
-        ...data
-      });
-    } catch (error) {
-      return res.status(401).json({
-        success: false,
-        message: error.message
-      });
-    }
-  }
-
-  async logout(req, res) {
-    try {
-      await authService.logout();
-      return res.status(200).json({
-        success: true,
-        message: 'Logged out successfully'
+        message: 'Trip ended',
+        trip
       });
     } catch (error) {
       return res.status(400).json({
@@ -64,12 +42,12 @@ class AuthController {
     }
   }
 
-  async forgotPassword(req, res) {
+  async active(req, res) {
     try {
-      await authService.forgotPassword(req.body.email);
+      const trips = await tripService.activeTrips();
       return res.status(200).json({
         success: true,
-        message: 'Password reset instructions sent'
+        trips
       });
     } catch (error) {
       return res.status(400).json({
@@ -79,12 +57,42 @@ class AuthController {
     }
   }
 
-  async resetPassword(req, res) {
+  async details(req, res) {
     try {
-      await authService.resetPassword(req.body);
+      const trip = await tripService.tripDetails(req.params.id);
       return res.status(200).json({
         success: true,
-        message: 'Password reset successful'
+        trip
+      });
+    } catch (error) {
+      return res.status(404).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  async history(req, res) {
+    try {
+      const trips = await tripService.tripHistory();
+      return res.status(200).json({
+        success: true,
+        trips
+      });
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  async parentTrips(req, res) {
+    try {
+      const trips = await tripService.parentTrips(req.user.id);
+      return res.status(200).json({
+        success: true,
+        trips
       });
     } catch (error) {
       return res.status(400).json({
@@ -95,4 +103,4 @@ class AuthController {
   }
 }
 
-module.exports = new AuthController();
+module.exports = new TripController();

@@ -1,14 +1,14 @@
-const authService = require('./auth.service');
+const busService = require('./bus.service');
 
-class AuthController {
+class BusController {
 
-  async register(req, res) {
+  async create(req, res) {
     try {
-      const user = await authService.register(req.body);
+      const bus = await busService.createBus(req.body);
       return res.status(201).json({
         success: true,
-        message: 'User registered successfully',
-        user
+        message: 'Bus created successfully',
+        bus
       });
     } catch (error) {
       return res.status(400).json({
@@ -18,43 +18,12 @@ class AuthController {
     }
   }
 
-  async login(req, res) {
+  async list(req, res) {
     try {
-      const data = await authService.login(req.body);
+      const buses = await busService.listBuses();
       return res.status(200).json({
         success: true,
-        message: 'Login successful',
-        ...data
-      });
-    } catch (error) {
-      return res.status(401).json({
-        success: false,
-        message: error.message
-      });
-    }
-  }
-
-  async refreshToken(req, res) {
-    try {
-      const data = await authService.refreshToken(req.body);
-      return res.status(200).json({
-        success: true,
-        ...data
-      });
-    } catch (error) {
-      return res.status(401).json({
-        success: false,
-        message: error.message
-      });
-    }
-  }
-
-  async logout(req, res) {
-    try {
-      await authService.logout();
-      return res.status(200).json({
-        success: true,
-        message: 'Logged out successfully'
+        buses
       });
     } catch (error) {
       return res.status(400).json({
@@ -64,12 +33,31 @@ class AuthController {
     }
   }
 
-  async forgotPassword(req, res) {
+  async getById(req, res) {
     try {
-      await authService.forgotPassword(req.body.email);
+      const bus = await busService.getBusById(req.params.id);
       return res.status(200).json({
         success: true,
-        message: 'Password reset instructions sent'
+        bus
+      });
+    } catch (error) {
+      return res.status(404).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  async update(req, res) {
+    try {
+      const bus = await busService.updateBus(
+        req.params.id,
+        req.body
+      );
+      return res.status(200).json({
+        success: true,
+        message: 'Bus updated successfully',
+        bus
       });
     } catch (error) {
       return res.status(400).json({
@@ -79,12 +67,28 @@ class AuthController {
     }
   }
 
-  async resetPassword(req, res) {
+  async delete(req, res) {
     try {
-      await authService.resetPassword(req.body);
+      await busService.deleteBus(req.params.id);
       return res.status(200).json({
         success: true,
-        message: 'Password reset successful'
+        message: 'Bus deleted successfully'
+      });
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  async assignDriver(req, res) {
+    try {
+      const bus = await busService.assignDriver(req.body);
+      return res.status(200).json({
+        success: true,
+        message: 'Driver assigned successfully',
+        bus
       });
     } catch (error) {
       return res.status(400).json({
@@ -95,4 +99,4 @@ class AuthController {
   }
 }
 
-module.exports = new AuthController();
+module.exports = new BusController();

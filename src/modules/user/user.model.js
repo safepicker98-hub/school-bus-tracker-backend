@@ -2,18 +2,54 @@ const prisma = require('../../prisma/client');
 
 console.log('USER MODEL LOADED FROM:', __filename);
 
-exports.findUserByEmail = async (email) => {
-  return prisma.user.findUnique({
-    where: {
-      email: email
-    }
-  });
-};
+class UserModel {
 
-exports.createUser = async (data) => {
-  return prisma.user.create({ data });
-};
+  async findById(id) {
+    return prisma.user.findUnique({
+      where: { id }
+    });
+  }
 
-exports.getAllUsers = async () => {
-  return prisma.user.findMany();
-};
+  async findUserByEmail(email) {
+    return prisma.user.findUnique({
+      where: { email }
+    });
+  }
+
+  async findAll() {
+    return prisma.user.findMany({
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+  }
+
+  async create(data) {
+    return prisma.user.create({
+      data
+    });
+  }
+
+  async update(id, data) {
+    return prisma.user.update({
+      where: { id },
+      data
+    });
+  }
+
+  async disable(id) {
+    return prisma.user.update({
+      where: { id },
+      data: { isActive: false }
+    });
+  }
+
+  async saveDeviceToken(userId, deviceToken) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: { deviceToken }
+    });
+  }
+}
+
+module.exports = new UserModel();

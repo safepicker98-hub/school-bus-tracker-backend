@@ -7,16 +7,39 @@ datasource db {
   url      = "file:./dev.db"
 }
 
+//////////////////////////////////////////////////////
+// ENUMS
+//////////////////////////////////////////////////////
+
+enum UserRole {
+  admin
+  parent
+  driver
+}
+
+enum TripStatus {
+  ACTIVE
+  COMPLETED
+}
+
+//////////////////////////////////////////////////////
+// USER & AUTH
+//////////////////////////////////////////////////////
+
 model User {
   id         Int         @id @default(autoincrement())
   name       String?
   email      String      @unique
   password   String
+  role       UserRole    @default(parent)
   createdAt  DateTime    @default(now())
-  role       String      @default("parent")
   updatedAt  DateTime    @updatedAt
+
   authTokens AuthToken[]
-  posts      Post[]
+
+  // Relations by role
+  students   Student[]   @relation("ParentStudents")
+  driver     Driver?
 }
 
 model AuthToken {
@@ -25,9 +48,199 @@ model AuthToken {
   userId    Int
   createdAt DateTime @default(now())
   expiresAt DateTime
-  user      User     @relation(fields: [userId], references: [id])
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+//////////////////////////////////////////////////////
+// STUDENTS & PARENTS
+//////////////////////////////////////////////////////
+
+model Student {
+  id        Int      @id @default(autoincrement())
+  name      String
+  class     String?
+  createdAt DateTime @default(now())
+
+  parents   User[]   @relation("ParentStudents")
+  stopId    Int?
+  stop      Stop?    @relation(fields: [stopId], references: [id])
+}
+
+//////////////////////////////////////////////////////
+// DRIVER & BUS
+//////////////////////////////////////////////////////
+
+model Driver {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  licenseNo String
+  phone     String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  buses Bus[]
+}
+
+model Bus {
+  id        Int      @id @default(autoincrement())
+  number    String   @unique
+  capacity  Int
+  createdAt DateTime @default(now())
+
+  driverId Int?
+  driver   Driver? @relation(fields: [driverId], references: [id])
+
+  trips Trip[]
+}
+
+//////////////////////////////////////////////////////
+// ROUTES & STOPS
+//////////////////////////////////////////////////////
+
+model Route {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+
+  stops Stop[]
+  trips Trip[]
+}
+
+model Stop {
+  id        Int      @id @default(autoincrement())
+  name      String
+  latitude  Float
+  longitude Float
+  order     Int
+
+  routeId Int
+  route   Route @relation(fields: [routeId], references: [id])
+
+  students Student[]
+}
+
+//////////////////////////////////////////////////////
+// TRIPS
+//////////////////////////////////////////////////////
+
+model Trip {
+  id        Int        @id @default(autoincrement())
+  status    TripStatus
+  startedAt DateTime?
+  endedAt   DateTime?
+  createdAt DateTime @default(now())
+
+  busId    Int
+  driverId Int
+  routeId  Int
+
+  bus    Bus    @relation(fields: [busId], references: [id])
+  driver Driver @relation(fields: [driverId], references: [id])
+  route  Route  @relation(fields: [routeId], references: [id])
+}
+
+//////////////////////////////////////////////////////
+// OPTIONAL: POSTS (FROM YOUR ORIGINAL SCHEMA)
+//////////////////////////////////////////////////////
+model BusLocation {
+  id        Int      @id @default(autoincrement())
+  latitude  Float
+  longitude Float
+  speed     Float?
+  heading   Float?
+  createdAt DateTime @default(now())
+
+  busId  Int
+  bus    Bus @relation(fields: [busId], references: [id])
+}
+
+model BusETA {
+  id        Int      @id @default(autoincrement())
+  busId     Int
+  stopId    Int
+  eta       Int      // in minutes
+  createdAt DateTime @default(now())
+
+  bus  Bus  @relation(fields: [busId], references: [id])
+  stop Stop @relation(fields: [stopId], references: [id])
+}
+model Attendance {
+  id        Int      @id @default(autoincrement())
+  tripId    Int
+  studentId Int
+  type      String   // "board" or "deboard"
+  timestamp DateTime @default(now())
+
+  trip    Trip    @relation(fields: [tripId], references: [id])
+  student Student @relation(fields: [studentId], references: [id])
+}
+model Notification {
+  id        Int      @id @default(autoincrement())
+  title     String
+  message   String
+  type      String   // "boarding", "deboarding", "eta", "panic", "route-change", "custom"
+  userId    Int?     // optional, if targeting specific user; null = all
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+}
+
+model Chat {
+  id        Int       @id @default(autoincrement())
+  name      String?
+  createdAt DateTime  @default(now())
+  messages  Message[]
+  participants ChatParticipant[]
+}
+
+model ChatParticipant {
+  id     Int  @id @default(autoincrement())
+  chatId Int
+  userId Int
+
+  chat Chat @relation(fields: [chatId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  chatId    Int
+  senderId  Int
+  content   String
+  createdAt DateTime @default(now())
+
+  chat   Chat @relation(fields: [chatId], references: [id])
+  sender User @relation(fields: [senderId], references: [id])
+}
+model Panic {
+  id         Int      @id @default(autoincrement())
+  tripId     Int?
+  busId      Int?
+  driverId   Int
+  studentId  Int?
+  description String?
+  status     String   @default("active") // active / resolved
+  createdAt  DateTime @default(now())
+  resolvedAt DateTime?
+
+  driver  User?    @relation(fields: [driverId], references: [id])
+  trip    Trip?    @relation(fields: [tripId], references: [id])
+  student Student? @relation(fields: [studentId], references: [id])
+  bus     Bus?     @relation(fields: [busId], references: [id])
+}
+model DriverBehavior {
+  id         Int      @id @default(autoincrement())
+  driverId   Int
+  tripId     Int?
+  speed      Float?    // km/h
+  braking    Float?    // severity score
+  eventType  String    // e.g., 'speed', 'braking'
+  createdAt  DateTime  @default(now())
+  driver User @relation(fields: [driverId], references: [id])
+  trip   Trip? @relation(fields: [tripId], references: [id])
+}
 model Post {
   id        Int      @id @default(autoincrement())
   title     String
@@ -35,5 +248,7 @@ model Post {
   published Boolean  @default(false)
   authorId  Int
   createdAt DateTime @default(now())
-  author    User     @relation(fields: [authorId], references: [id])
+
+  author User @relation(fields: [authorId], references: [id])
 }
+
