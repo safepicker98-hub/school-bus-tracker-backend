@@ -1,37 +1,34 @@
-const { createClient } = require('@google/maps');
-const logger = require('../../config/logger');
+const { Client } = require("@googlemaps/google-maps-services-js");
+const logger = require("../../config/logger");
 
-// Ensure you have GOOGLE_MAPS_API_KEY in your .env
-const client = createClient({
-  key: process.env.GOOGLE_MAPS_API_KEY,
-  Promise: Promise,
-});
+// Create client (NO API KEY HERE)
+const client = new Client({});
 
 /**
- * Get distance matrix between origins and destinations.
- * @param {Array<string>} origins - e.g. ['lat,lng']
- * @param {Array<string>} destinations - e.g. ['lat,lng']
- * @param {object} [options] - additional options for the API
- * @returns {Promise<object>} - raw response from Google Maps API
+ * Get distance matrix between origins and destinations
  */
 async function getDistanceMatrix(origins, destinations, options = {}) {
   try {
-    const response = await client.distanceMatrix({
-      origins,
-      destinations,
-      mode: options.mode || 'driving',
-      departure_time: options.departure_time || 'now',
-      traffic_model: options.traffic_model || 'best_guess',
-      ...options,
-    }).asPromise();
-    logger.info('Google Maps distance matrix fetched', {
-      origins,
-      destinations,
-      status: response.json.status,
+    const response = await client.distancematrix({
+      params: {
+        origins,
+        destinations,
+        mode: options.mode || "driving",
+        departure_time: options.departure_time || "now",
+        traffic_model: options.traffic_model || "best_guess",
+        key: process.env.GOOGLE_MAPS_API_KEY,
+      },
     });
-    return response.json;
+
+    logger.info("Google Maps distance matrix fetched", {
+      origins,
+      destinations,
+      status: response.data.status,
+    });
+
+    return response.data;
   } catch (err) {
-    logger.error('Google Maps API error', { err });
+    logger.error("Google Maps API error", err);
     throw err;
   }
 }
