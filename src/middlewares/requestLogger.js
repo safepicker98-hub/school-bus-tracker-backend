@@ -1,11 +1,23 @@
-const morgan = require('morgan');
+const logger = require('../config/logger');
 
-// Custom token for user ID if available
-morgan.token('user-id', (req) => {
-  return req.user ? req.user.id : 'anonymous';
-});
+/**
+ * Winston based request logger middleware.
+ * Logs method, URL, status, response time and optional user ID.
+ */
+function requestLogger(req, res, next) {
+  const start = Date.now();
 
-// Create custom format
-const requestLogger = morgan(':method :url :status :response-time ms - :user-id');
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const { method, originalUrl } = req;
+    const { statusCode } = res;
+    const userId = req.user ? req.user.id : undefined;
+    logger.info('HTTP %s %s %d %dms', method, originalUrl, statusCode, duration, {
+      userId,
+    });
+  });
+
+  next();
+}
 
 module.exports = requestLogger;

@@ -1,76 +1,129 @@
 const bcrypt = require('bcryptjs');
 const userModel = require('./user.model');
+const logger = require('../../config/logger');
+const firebase = require('../../integrations/firebase/firebase');
 
 class UserService {
 
   async getMyProfile(userId) {
-    const user = await userModel.findById(userId);
-    if (!user) throw new Error('User not found');
+    try {
+      const user = await userModel.findById(userId);
+      if (!user) throw new Error('User not found');
 
-    delete user.password;
-    return user;
+      delete user.password;
+      return user;
+    } catch (err) {
+      logger.error('Failed to get profile for user %s', userId, { err });
+      throw err;
+    }
   }
 
   async updateMyProfile(userId, payload) {
-    const user = await userModel.findById(userId);
-    if (!user) throw new Error('User not found');
+    try {
+      const user = await userModel.findById(userId);
+      if (!user) throw new Error('User not found');
 
-    if (payload.password) {
-      payload.password = await bcrypt.hash(payload.password, 10);
+      if (payload.password) {
+        payload.password = await bcrypt.hash(payload.password, 10);
+      }
+
+      const updatedUser = await userModel.update(userId, payload);
+      delete updatedUser.password;
+
+      return updatedUser;
+    } catch (err) {
+      logger.error('Failed to update profile for user %s', userId, { err });
+      throw err;
     }
-
-    const updatedUser = await userModel.update(userId, payload);
-    delete updatedUser.password;
-
-    return updatedUser;
   }
 
   async listUsers() {
-    return await userModel.findAll();
+    try {
+      return await userModel.findAll();
+    } catch (err) {
+      logger.error('Failed to list users', { err });
+      throw err;
+    }
   }
 
   async getUserById(id) {
-    const user = await userModel.findById(id);
-    if (!user) throw new Error('User not found');
+    try {
+      const user = await userModel.findById(id);
+      if (!user) throw new Error('User not found');
 
-    delete user.password;
-    return user;
+      delete user.password;
+      return user;
+    } catch (err) {
+      logger.error('Failed to get user by id %s', id, { err });
+      throw err;
+    }
   }
 
   async createUser(payload) {
-    if (payload.password) {
-      payload.password = await bcrypt.hash(payload.password, 10);
+    try {
+      if (payload.password) {
+        payload.password = await bcrypt.hash(payload.password, 10);
+      }
+
+      const user = await userModel.create(payload);
+      delete user.password;
+
+      // Send a welcome notification (topic based) – adjust as needed
+      try {
+        await firebase.sendNotification('/users', {
+          title: 'Welcome to Safe Bus Tracker',
+          body: `User ${user.email || 'new user'} created successfully`,
+        });
+        logger.info('Welcome notification sent for user %s', user.id);
+      } catch (notifyErr) {
+        logger.warn('Failed to send welcome notification', { err: notifyErr });
+      }
+
+      return user;
+    } catch (err) {
+      logger.error('Failed to create user', { err });
+      throw err;
     }
-
-    const user = await userModel.create(payload);
-    delete user.password;
-
-    return user;
   }
 
   async updateUser(id, payload) {
-    if (payload.password) {
-      payload.password = await bcrypt.hash(payload.password, 10);
+    try {
+      if (payload.password) {
+        payload.password = await bcrypt.hash(payload.password, 10);
+      }
+
+      const updatedUser = await userModel.update(id, payload);
+      delete updatedUser.password;
+
+      return updatedUser;
+    } catch (err) {
+      logger.error('Failed to update user %s', id, { err });
+      throw err;
     }
-
-    const updatedUser = await userModel.update(id, payload);
-    delete updatedUser.password;
-
-    return updatedUser;
   }
 
   async disableUser(id) {
-    await userModel.update(id, { isActive: false });
-    return true;
+    try {
+      await userModel.update(id, { isActive: false });
+      return true;
+    } catch (err) {
+      logger.error('Failed to disable user %s', id, { err });
+      throw err;
+    }
   }
 
   async saveDeviceToken(userId, deviceToken) {
-    if (!deviceToken) {
-      throw new Error('Device token is required');
-    }
+    try {
+      if (!deviceToken) {
+        throw new Error('Device token is required');
+      }
 
-    await userModel.saveDeviceToken(userId, deviceToken);
-    return true;
+      await userModel.saveDeviceToken(userId, deviceToken);
+      return true;
+    } catch (err) {
+      logger.error('Failed to save device token for user %s', userId, { err });
+      throw err;
+    }
   }
 }
 
